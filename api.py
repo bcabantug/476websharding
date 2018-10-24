@@ -5,11 +5,35 @@ import json
 from datetime import datetime
 from time import gmtime, strftime
 
+import uuid #will be used for generating GUIDs
+
 app = Flask(__name__)
 app.config["DEBUG"] = True
 
 # Global db variable
-DATABASE = 'forum.db'
+DATABASE = 'general.db'
+SHARDONE = 'shardone.db'
+SHARDTWO = 'shardtwo.db'
+SHARDTHREE = 'shardothree.db'
+#mod 3 for sharding on the posts based on thread id
+
+# #example of storing GUID in sqlite3 WILL MODIFY/use as based (uuid.UUID as primary keys)
+# sqlite3.register_converter('GUID', lambda b: uuid.UUID(bytes_le=b)) #convert SQLite types to Python types
+# sqlite3.register_adapter(uuid.UUID, lambda u: buffer(u.bytes_le)) #convert Python types to SQLite types
+#
+# conn = sqlite3.connect('test.db', detect_types=sqlite3.PARSE_DECLTYPES) #pass detect types paramter of detect
+#
+# c = conn.cursor()
+# c.execute('CREATE TABLE test (guid GUID PRIMARY KEY, name TEXT)')
+#
+# data = (uuid.uuid4(), 'foo')
+# print 'Input Data:', data
+# c.execute('INSERT INTO test VALUES (?,?)', data)
+#
+# c.execute('SELECT * FROM test')
+# print 'Result Data:', c.fetchone()
+
+#for example purposes
 
 # From http://flask.pocoo.org/docs/1.0/patterns/sqlite3/
 # Connects to and returns the db used in init_db() and query_db()
