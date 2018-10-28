@@ -386,13 +386,30 @@ def change_pass(username):
 #from http://flask.pocoo.org/docs/1.0/cli/
 # CLI command for initlizing the db
 @app.cli.command()
-def init_db():
+def init_db(data):
     with app.app_context():
-        db = get_db()
-        with app.open_resource('init.sql', mode='r') as f:
-            db.cursor().executescript(f.read())
-        db.commit()
-    print ('Database Initilaized')
+        if data == DATABASE:
+            db = get_db()
+            with app.open_resource('init.sql', mode='r') as f:
+                db.cursor().executescript(f.read())
+            db.commit()
+            print ('Database Initilaized')
+        else:
+            #create/init the shards
+            db = get_db(data)
+            conn = sqlite3.connect(data, detect_types = sqlite3.PARSE_DECLTYPES)
+            
+            c = conn.cursor()
+            #no foreign keys needed as posts are on separate db shards away from the main db
+            c.execute('CREATE TABLE Posts(guid GUID PRIMARY KEY, `ThreadBelongsTo` INTEGER NOT NULL, `AuthorId` INTEGER NOT NULL, `PostsTimestamp` TEXT NOT NULL, `Message` TEXT NOT NULL)')
+            
+            #insert test data here
+            
+            #data_insert = (uuid.uuid4(), '1', '1',  )
+            #test data check
+            #print 'Input_data: ', data_insert
+            #c.execute('INSERT INTO test')
+            
 
 
 if __name__ == "__main__":
