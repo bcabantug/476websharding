@@ -43,7 +43,7 @@ sqlite3.register_adapter(uuid.UUID, lambda u: buffer(u.bytes_le))
 
 # From http://flask.pocoo.org/docs/1.0/patterns/sqlite3/
 # Connects to and returns the db used in init_db() and query_db() #attempt to modify get_db to fit the possibility of 3 posts shards
-def get_db(db_name):
+def get_db(db_name=DATABASE):
     db = getattr(g, '_database', None)
     if db is None:
         db = g._database = sqlite3.connect(db_name)
@@ -63,8 +63,8 @@ def close_connection(exception):
 # args: query arguments, leave empty if no args; e.g. ['user', 'password']
 # one: Set to true if only 1 row is required for query else keep false
 # returns results of the query
-def query_db(query, args=(), one=False):
-    cur = get_db().execute(query, args)
+def query_db(query, args=(), one=False, db_name=DATABASE):
+    cur = get_db(db_name).execute(query, args)
     rv = cur.fetchall()
     cur.close()
     return (rv[0] if rv else None) if one else rv
@@ -286,7 +286,7 @@ def post(forum_id, thread_id):
             return get_response(404)
         # Get all posts from specified thread
         query = 'SELECT Username as author, Message as text, PostsTimestamp as timestamp from Posts join Users on AuthorId = UserId and ThreadBelongsTo = ?;'
-        
+
         #get the posts based on thread id/ have to check for uuid (not setup yet)
         conn = sqlite3.connect(DATABASE)
         conn.row_factory = dict_factory
