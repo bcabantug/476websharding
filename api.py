@@ -1,6 +1,7 @@
 from flask import Flask, request, jsonify, g, Response
 from flask_basicauth import BasicAuth
 import sqlite3
+import uuid
 import json
 from datetime import datetime
 from time import gmtime, strftime
@@ -14,7 +15,7 @@ app.config["DEBUG"] = True
 DATABASE = 'general.db'
 SHARDONE = 'shardone.db'
 SHARDTWO = 'shardtwo.db'
-SHARDTHREE = 'shardothree.db'
+SHARDTHREE = 'shardthree.db'
 #mod 3 for sharding on the posts based on thread id
 
 #adapters for sqlite3 for uuid use for posts
@@ -395,30 +396,56 @@ def change_pass(username):
 #from http://flask.pocoo.org/docs/1.0/cli/
 # CLI command for initlizing the db
 @app.cli.command()
-def init_db(data):
+def init_db():
+    databases = [DATABASE, SHARDONE, SHARDTWO, SHARDTHREE]
     with app.app_context():
-        if data == DATABASE:
-            db = get_db()
-            with app.open_resource('init.sql', mode='r') as f:
-                db.cursor().executescript(f.read())
-            db.commit()
-            print ('Database Initilaized')
-        else:
+        # if data == DATABASE:
+        #     db = get_db()
+        #     with app.open_resource('init.sql', mode='r') as f:
+        #         db.cursor().executescript(f.read())
+        #     db.commit()
+        #     print ('Database Initilaized')
+        # else:
+        for data in databases:
             #create/init the shards
-            db = get_db(data)
-            conn = sqlite3.connect(data, detect_types = sqlite3.PARSE_DECLTYPES)
-            
-            c = conn.cursor()
-            #no foreign keys needed as posts are on separate db shards away from the main db
-            c.execute('CREATE TABLE Posts(guid GUID PRIMARY KEY, `ThreadBelongsTo` INTEGER NOT NULL, `AuthorId` INTEGER NOT NULL, `PostsTimestamp` TEXT NOT NULL, `Message` TEXT NOT NULL)')
-            
-            #insert test data here
-            
-            #data_insert = (uuid.uuid4(), '1', '1',  )
-            #test data check
-            #print 'Input_data: ', data_insert
-            #c.execute('INSERT INTO test')
-            
+            if data == DATABASE:
+                db = get_db()
+                with app.open_resource('init.sql', mode='r') as f:
+                    db.cursor().executescript(f.read())
+                db.commit()
+                print ('Database Initilaized')
+            else:
+
+                sqlite3.register_converter('GUID', lambda b: uuid.UUID(bytes_le=b))
+                sqlite3.register_adapter(uuid.UUID, lambda u: u.bytes_le)
+
+                db = get_db(data)
+                conn = sqlite3.connect(data, detect_types = sqlite3.PARSE_DECLTYPES)
+
+                c = conn.cursor()
+                #no foreign keys needed as posts are on separate db shards away from the main db
+                c.execute('DROP TABLE if exists Posts')
+                c.execute('CREATE TABLE Posts(guid GUID PRIMARY KEY, `ThreadBelongsTo` INTEGER NOT NULL, `AuthorId` INTEGER NOT NULL, `PostsTimestamp` TEXT NOT NULL, `Message` TEXT NOT NULL)')
+                #
+                # #insert test data here
+                #
+                data_insert = (uuid.uuid4(), 1, 2,  'Tue, 02 Sep 2018 15:42:28 GMT', 'Post Test - Author=1 Thread=1')
+                #test data check
+                print ('Input_data: ', data_insert)
+                c.execute('INSERT INTO Posts VALUES(?, ?, ?, ?, ?)', (uuid.uuid4(), 1, 2,  'Tue, 02 Sep 2018 15:42:28 GMT', 'Post Test - Author=1 Thread=1'))
+                conn.commit()
+                c.execute('SELECT * from Posts;')
+                print ("Result Data: ", c.fetchone())
+
+                c.execute('DROP table if exists test')
+                # c.execute('CREATE TABLE test (guid GUID PRIMARY KEY, name TEXT)')
+                #
+                # data = (uuid.uuid4(), 'foo')
+                # print ('Input Data:', data)
+                # c.execute('INSERT INTO test VALUES (?,?)', data)
+                #
+                # c.execute('SELECT * FROM test')
+                # print ('Result Data:', c.fetchone())
 
 
 if __name__ == "__main__":
