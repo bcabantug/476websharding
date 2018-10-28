@@ -432,7 +432,7 @@ def init_db():
                 data_insert = (uuid.uuid4(), 1, 2,  'Tue, 02 Sep 2018 15:42:28 GMT', 'Post Test - Author=1 Thread=1')
                 #test data check
                 print ('Input_data: ', data_insert)
-                c.execute('INSERT INTO Posts VALUES(?, ?, ?, ?, ?)', (uuid.uuid4(), 1, 2,  'Tue, 02 Sep 2018 15:42:28 GMT', 'Post Test - Author=1 Thread=1'))
+                c.execute('INSERT INTO Posts VALUES(?, ?, ?, ?, ?)', data_insert)
                 conn.commit()
                 c.execute('SELECT * from Posts;')
                 print ("Result Data: ", c.fetchone())
