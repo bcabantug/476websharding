@@ -22,7 +22,6 @@ SHARDTHREE = 'shardothree.db'
 sqlite3.register_converter('GUID', lambda b: uuid.UUID(bytes_le=b))
 sqlite3.register_adapter(uuid.UUID, lambda u: buffer(u.bytes_le))
 
-
 # #example of storing GUID in sqlite3 WILL MODIFY/use as based (uuid.UUID as primary keys)
 # sqlite3.register_converter('GUID', lambda b: uuid.UUID(bytes_le=b)) #convert SQLite types to Python types
 # sqlite3.register_adapter(uuid.UUID, lambda u: buffer(u.bytes_le)) #convert Python types to SQLite types
@@ -40,6 +39,16 @@ sqlite3.register_adapter(uuid.UUID, lambda u: buffer(u.bytes_le))
 # print 'Result Data:', c.fetchone()
 
 #for example purposes
+
+#function for returning shard key based on thread id
+def get_shard_key(threadNum):
+    shardNum = threadNum % 3
+    if shardNum == 1:
+        return SHARDONE
+    elif shardNum == 2:
+        return SHARDTWO
+    elif shardNum == 3:
+        return SHARDTHREE
 
 # From http://flask.pocoo.org/docs/1.0/patterns/sqlite3/
 # Connects to and returns the db used in init_db() and query_db() #attempt to modify get_db to fit the possibility of 3 posts shards
