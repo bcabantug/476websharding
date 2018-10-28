@@ -17,6 +17,12 @@ SHARDTWO = 'shardtwo.db'
 SHARDTHREE = 'shardothree.db'
 #mod 3 for sharding on the posts based on thread id
 
+#adapters for sqlite3 for uuid use for posts
+#taken from https://stackoverflow.com/questions/18821265/proper-way-to-store-guid-in-sqlite/18842491#18842491
+sqlite3.register_converter('GUID', lambda b: uuid.UUID(bytes_le=b))
+sqlite3.register_adapter(uuid.UUID, lambda u: buffer(u.bytes_le))
+
+
 # #example of storing GUID in sqlite3 WILL MODIFY/use as based (uuid.UUID as primary keys)
 # sqlite3.register_converter('GUID', lambda b: uuid.UUID(bytes_le=b)) #convert SQLite types to Python types
 # sqlite3.register_adapter(uuid.UUID, lambda u: buffer(u.bytes_le)) #convert Python types to SQLite types
@@ -36,11 +42,11 @@ SHARDTHREE = 'shardothree.db'
 #for example purposes
 
 # From http://flask.pocoo.org/docs/1.0/patterns/sqlite3/
-# Connects to and returns the db used in init_db() and query_db()
-def get_db():
+# Connects to and returns the db used in init_db() and query_db() #attempt to modify get_db to fit the possibility of 3 posts shards
+def get_db(db_name):
     db = getattr(g, '_database', None)
     if db is None:
-        db = g._database = sqlite3.connect(DATABASE)
+        db = g._database = sqlite3.connect(db_name)
         db.row_factory = dict_factory
     return db
 
@@ -280,6 +286,8 @@ def post(forum_id, thread_id):
             return get_response(404)
         # Get all posts from specified thread
         query = 'SELECT Username as author, Message as text, PostsTimestamp as timestamp from Posts join Users on AuthorId = UserId and ThreadBelongsTo = ?;'
+        
+        #get the posts based on thread id/ have to check for uuid (not setup yet)
         conn = sqlite3.connect(DATABASE)
         conn.row_factory = dict_factory
         cur = conn.cursor()
