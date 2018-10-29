@@ -85,7 +85,7 @@ def dict_factory(cursor, row):
     d={}
     for idx, col in enumerate(cursor.description):
         d[col[0]]= row[idx]
-    return d3568180608
+    return d #3568180608
 
 #subclass of BasicAuth (based off Flask-BasicAuth extension)
 class NewAuth(BasicAuth):
@@ -96,7 +96,7 @@ class NewAuth(BasicAuth):
         if user is not None:
             return True
         else:
-            return Falsesqlite3.PARSE_DECLTYPES
+            return False #sqlite3.PARSE_DECLTYPES
 
 #function to check the auth object for present authorization
 def auth_check(auth):
