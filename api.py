@@ -54,10 +54,10 @@ def get_shard_key(threadNum):
 
 # From http://flask.pocoo.org/docs/1.0/patterns/sqlite3/
 # Connects to and returns the db used in init_db() and query_db() #attempt to modify get_db to fit the possibility of 3 posts shards
-def get_db(db_name=DATABASE):
+def get_db(db_name=DATABASE, detect_types=0):
     db = getattr(g, '_database', None)
     if db is None:
-        db = g._database = sqlite3.connect(db_name)
+        db = g._database = sqlite3.connect(db_name, detect_types=detect_types) #sqlite3.PARSE_DECLTYPES
         db.row_factory = dict_factory
     return db
 
@@ -71,11 +71,11 @@ def close_connection(exception):
 
 # From http://flask.pocoo.org/docs/1.0/patterns/sqlite3/
 # query: query as string; e.g. 'Select * from Users'
-# args: query arguments, leave empty if no args; e.g. ['user', 'password']
+# args: query arguments, leave empty if no args; e.g. ['user', 'password']sqlite3.PARSE_DECLTYPES
 # one: Set to true if only 1 row is required for query else keep false
 # returns results of the query
-def query_db(query, args=(), one=False, db_name=DATABASE):
-    cur = get_db(db_name).execute(query, args)
+def query_db(query, args=(), one=False, db_name=DATABASE, detect_types=None):
+    cur = get_db(db_name, detect_types).execute(query, args)
     rv = cur.fetchall()
     cur.close()
     return (rv[0] if rv else None) if one else rv
@@ -85,7 +85,7 @@ def dict_factory(cursor, row):
     d={}
     for idx, col in enumerate(cursor.description):
         d[col[0]]= row[idx]
-    return d
+    return d3568180608
 
 #subclass of BasicAuth (based off Flask-BasicAuth extension)
 class NewAuth(BasicAuth):
@@ -96,7 +96,7 @@ class NewAuth(BasicAuth):
         if user is not None:
             return True
         else:
-            return False
+            return Falsesqlite3.PARSE_DECLTYPES
 
 #function to check the auth object for present authorization
 def auth_check(auth):
@@ -219,6 +219,10 @@ def thread(forum_id):
             thread = cur.execute('SELECT last_insert_rowid() as ThreadId;').fetchall()
             threadid = dict(thread[0]).get('ThreadId')
             timestamp = strftime('%a, %d %b %Y %H:%M:%S', gmtime()) + ' GMT'
+
+            # Select query to return thread id
+
+            # Update the insert posts query
             cur.execute('INSERT into Posts (`AuthorId`, `ThreadBelongsTo`, `PostsTimestamp`, `Message`) values (?,?,?,?);', (userid, threadid, timestamp, requestJSON.get('text')))
             conn.commit()
             conn.close()
@@ -228,6 +232,7 @@ def thread(forum_id):
             return get_response(404)
 
     elif request.method == 'GET':
+        # Break this query up
         query = 'SELECT id, title, Users.Username as creator, timestamp from (select id, AuthorId, timestamp, title from (select Threads.ThreadId as id, AuthorId, timestamp, Threads.ThreadsTitle as title, Threads.ForumId as Fid from (select ThreadBelongsTo, AuthorId, PostsTimestamp as timestamp, Posts.PostId from Posts) join Threads on ThreadBelongsTo = Threads.ThreadId group by Threads.ThreadId having max(PostId) order by PostId desc) join Forums on Fid = Forums.ForumId where Forums.ForumId = ?) join Users where AuthorId = Users.UserId'
         to_filter = []
         #return all the threads from the forum
@@ -279,7 +284,10 @@ def post(forum_id, thread_id):
             userid = dict(user[0]).get('UserId')
             requestJSON = request.get_json()
             timestamp = strftime('%a, %d %b %Y %H:%M:%S', gmtime()) + ' GMT'
-            conn = get_db()
+
+            # Replace 1 with current thread id
+            # Use mod function to return shard and pass to get_db along with detect_types
+            conn = get_db(get_shard_key(thread_id), sqlite3.PARSE_DECLTYPES)
             cur = conn.cursor()
             cur.execute('INSERT into Posts (`AuthorId`, `ThreadBelongsTo`, `PostsTimestamp`, `Message`) values (?,?,?,?);', (userid, thread_id, timestamp, requestJSON.get('text')))
             conn.commit()
@@ -293,7 +301,7 @@ def post(forum_id, thread_id):
     elif request.method == 'GET':
         # check if the forum exists
         checkifforumexists = query_db('SELECT 1 from Forums where ForumId = ?;', [forum_id])
-        if checkifforumexists == []:
+        if checkifforumexists == []:sqlite3.PARSE_DECLTYPES
             return get_response(404)
         # Get all posts from specified thread
         query = 'SELECT Username as author, Message as text, PostsTimestamp as timestamp from Posts join Users on AuthorId = UserId and ThreadBelongsTo = ?;'
