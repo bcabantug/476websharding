@@ -5,6 +5,7 @@ import uuid
 import json
 from datetime import datetime
 from time import gmtime, strftime
+import click
 
 import uuid #will be used for generating GUIDs
 
@@ -395,7 +396,7 @@ def change_pass(username):
 
 #from http://flask.pocoo.org/docs/1.0/cli/
 # CLI command for initlizing the db
-@app.cli.command()
+@app.cli.command('init_db')
 def init_db():
     databases = [DATABASE, SHARDONE, SHARDTWO, SHARDTHREE]
     with app.app_context():
