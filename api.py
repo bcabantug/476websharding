@@ -46,11 +46,11 @@ sqlite3.register_adapter(uuid.UUID, lambda u: u.bytes_le)
 #function for returning shard key based on thread id
 def get_shard_key(threadNum):
     shardNum = threadNum % 3
-    if shardNum == 1:
+    if shardNum == 0:
         return SHARDONE
-    elif shardNum == 2:
+    elif shardNum == 1:
         return SHARDTWO
-    elif shardNum == 3:
+    elif shardNum == 2:
         return SHARDTHREE
 
 # From http://flask.pocoo.org/docs/1.0/patterns/sqlite3/
