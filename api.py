@@ -23,7 +23,7 @@ SHARDTHREE = 'shardthree.db'
 #adapters for sqlite3 for uuid use for posts
 #taken from https://stackoverflow.com/questions/18821265/proper-way-to-store-guid-in-sqlite/18842491#18842491
 sqlite3.register_converter('GUID', lambda b: uuid.UUID(bytes_le=b))
-sqlite3.register_adapter(uuid.UUID, lambda u: buffer(u.bytes_le))
+sqlite3.register_adapter(uuid.UUID, lambda u: u.bytes_le)
 
 # #example of storing GUID in sqlite3 WILL MODIFY/use as based (uuid.UUID as primary keys)
 # sqlite3.register_converter('GUID', lambda b: uuid.UUID(bytes_le=b)) #convert SQLite types to Python types
@@ -212,6 +212,7 @@ def thread(forum_id):
             if checkifforumexists == []:
                 return get_response(404)
             user = query_db('SELECT UserId from Users where Username = ?;', [auth.username])
+            usertext = query_db('SELECT Username from Users where Username = ?;', [auth.username])
             userid = dict(user[0]).get('UserId')
             requestJSON = request.get_json()
             conn = get_db()
@@ -221,18 +222,22 @@ def thread(forum_id):
             cur.execute('INSERT Into Threads (`ForumId`, `ThreadsTitle`, `CreatorId`,`RecentPostTimeStamp`) Values (?,?,?,?);', (int(forum_id), requestJSON.get('title'), userid, timestamp))
             thread = cur.execute('SELECT last_insert_rowid() as ThreadId;').fetchall()
             threadid = dict(thread[0]).get('ThreadId')
+            conn.commit()
+            conn.close()
 
             #timestamp = int(gmtime())
 
             # Select query to return thread id
-            conn = get_db(get_shard_key(threadid), sqlite3.PARSE_DECLTYPES)
-            cur = conn.cursor()
-            # Update the insert posts query
-            cur.execute('INSERT into Posts (`guid`, `AuthorName`, `ThreadBelongsTo`, `PostsTimestamp`, `Message`) values (?,?,?,?,?);', (uuid.uuid4(), user, threadid, timestamp, requestJSON.get('text')))
-            conn.commit()
-            conn.close()
+            with app.app_context():
+                conn = get_db(get_shard_key(threadid), sqlite3.PARSE_DECLTYPES)
+                cur = conn.cursor()
+                # Update the insert posts query
+                # print(usertext[0]['Username'])
+                cur.execute('INSERT into Posts (`guid`, `AuthorName`, `ThreadBelongsTo`, `PostsTimestamp`, `Message`) values (?,?,?,?,?);', (uuid.uuid4(), usertext[0]['Username'], threadid, timestamp, requestJSON.get('text')))
+                conn.commit()
+                conn.close()
 
-            return get_response(201, body={}, location=('/forums/'+forum_id+'/'+str(threadid)))
+                return get_response(201, body={}, location=('/forums/'+forum_id+'/'+str(threadid)))
         else:
             return get_response(404)
 
