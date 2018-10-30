@@ -252,7 +252,7 @@ def thread(forum_id):
         #   where AuthorId = Users.UserId'
         # Select the columns from the Threads table
         query = """
-            SELECT Threads.ThreadId as id, Threads.ThreadsTitle as title, Users.Username as creator, strftime('%Y-%m-%d %H:%M:%f', Threads.RecentPostTimeStamp) as timestamp
+            SELECT Threads.ThreadId as id, Threads.ThreadsTitle as title, Users.Username as creator, strftime('%Y-%m-%d %H:%M:%S', Threads.RecentPostTimeStamp) as timestamp
             FROM Threads, Users, Forums
             WHERE Threads.CreatorId = Users.UserID
             AND Threads.ForumId = Forums.ForumId
@@ -267,6 +267,10 @@ def thread(forum_id):
             conn.row_factory = dict_factory
             cur = conn.cursor()
             all_threads = cur.execute(query, [str(forum_id)]).fetchall()
+
+            for thread in all_threads:
+                formatted_time = datetime.strptime(thread['timestamp'], '%Y-%m-%d %H:%M:%S')
+                thread['timestamp'] = formatted_time
             # If the the quey returns an empty result
             # e.g. http://127.0.0.1:5000/forums/100
             if all_threads == []:
@@ -486,9 +490,11 @@ def init_db():
 
 @app.route('/test', methods=['GET'])
 def test():
-    time = "2018-08-26 06:23:25.023"
-    formatted_time = datetime.strptime(time, '%')
+    time = "2018-08-26 06:23:25"
+    formatted_time = datetime.strptime(time, '%Y-%m-%d %H:%M:%S')
     print(formatted_time)
+
+    return jsonify(formatted_time)
 
 
 if __name__ == "__main__":
