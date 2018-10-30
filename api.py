@@ -340,20 +340,27 @@ def post(forum_id, thread_id):
         checkifthreadexists = query_db('SELECT 1 from Threads where ThreadId = ?;', [thread_id])
         if checkifthreadexists == []:
                 return get_response(404)
-        # Get all posts from specified thread
-        query = 'SELECT Username as author, Message as text, PostsTimestamp as timestamp from Posts join Users on AuthorId = UserId and ThreadBelongsTo = ?;'
+        # # Get all posts from specified thread
+        # query = 'SELECT Username as author, Message as text, PostsTimestamp as timestamp from Posts join Users on AuthorId = UserId and ThreadBelongsTo = ?;'
 
-        #get the posts based on thread id/ have to check for uuid (not setup yet)
-        conn = sqlite3.connect(DATABASE)
-        conn.row_factory = dict_factory
-        cur = conn.cursor()
-        # all_threads = cur.execute(query).fetchall()
-        allPosts = cur.execute(query, [thread_id]).fetchall()
-        conn.close()
-        if allPosts == []:
-            return get_response(404)
-        else:
-            return get_response(200, body=allPosts)
+        # #get the posts based on thread id/ have to check for uuid (not setup yet)
+        # conn = sqlite3.connect(DATABASE)
+        # conn.row_factory = dict_factory
+        # cur = conn.cursor()
+        # # all_threads = cur.execute(query).fetchall()
+        # allPosts = cur.execute(query, [thread_id]).fetchall()
+        # conn.close()
+
+        shard_key = get_shard_key(int(thread_id))
+        print(shard_key)
+        #query = 'Select '
+
+        return get_response(200)
+        # if allPosts == []:
+        #     return get_response(404)
+        # else:
+        #     return get_response(200, body=allPosts)
+            
 
     else:
         return get_response(405)
@@ -443,7 +450,7 @@ def change_pass(username):
 # CLI command for initlizing the db
 @app.cli.command('init_db')
 def init_db():
-    databases = [DATABASE, SHARDONE, SHARDTWO, SHARDTHREE]
+    databases = [DATABASE, SHARDTWO, SHARDTHREE, SHARDONE]
     thread_id = 1
     with app.app_context():
         # if data == DATABASE:
@@ -476,7 +483,7 @@ def init_db():
                 #
                 # #insert test data here
                 #
-                
+
                 data_insert = (uuid.uuid4(), thread_id, "alice",  'Tue, 02 Sep 2018 15:42:28 GMT', 'Post Test - Author=1 Thread=1')
                 thread_id = thread_id + 1
                 #test data check
