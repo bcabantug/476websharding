@@ -218,7 +218,7 @@ def thread(forum_id):
             conn = get_db()
             cur = conn.cursor()
 
-            timestamp = strftime('%Y-%m-%d %H:%M:%f', gmtime()) # + ' GMT'
+            timestamp = strftime('%Y-%m-%d %H:%M:%S', gmtime()) # + ' GMT'
             cur.execute('INSERT Into Threads (`ForumId`, `ThreadsTitle`, `CreatorId`,`RecentPostTimeStamp`) Values (?,?,?,?);', (int(forum_id), requestJSON.get('title'), userid, timestamp))
             thread = cur.execute('SELECT last_insert_rowid() as ThreadId;').fetchall()
             threadid = dict(thread[0]).get('ThreadId')
@@ -441,6 +441,7 @@ def change_pass(username):
 @app.cli.command('init_db')
 def init_db():
     databases = [DATABASE, SHARDONE, SHARDTWO, SHARDTHREE]
+    thread_id = 1
     with app.app_context():
         # if data == DATABASE:
         #     db = get_db()
@@ -472,7 +473,9 @@ def init_db():
                 #
                 # #insert test data here
                 #
-                data_insert = (uuid.uuid4(), 1, "alice",  'Tue, 02 Sep 2018 15:42:28 GMT', 'Post Test - Author=1 Thread=1')
+                
+                data_insert = (uuid.uuid4(), thread_id, "alice",  'Tue, 02 Sep 2018 15:42:28 GMT', 'Post Test - Author=1 Thread=1')
+                thread_id = thread_id + 1
                 #test data check
                 print ('Input_data: ', data_insert)
                 if sys.version_info[0] < 3:
