@@ -482,5 +482,12 @@ def init_db():
                 # print ('Result Data:', c.fetchone())
 
 
+@app.route('/test', methods=['GET'])
+def test():
+    time = "2018-08-26 06:23:25.023"
+    formatted_time = datetime.strptime(time, '%')
+    print(formatted_time)
+
+
 if __name__ == "__main__":
     app.run()
