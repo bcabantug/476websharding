@@ -218,7 +218,7 @@ def thread(forum_id):
             cur = conn.cursor()
 
             timestamp = strftime('%Y-%m-%d %H:%M:%f', gmtime()) # + ' GMT'
-            cur.execute('INSERT Into Threads (`ForumId`, `ThreadsTitle`, `CreatorId`,`RecentPostTimeStamp`) Values (?,?,?);', (int(forum_id), requestJSON.get('title'), userid, timestamp))
+            cur.execute('INSERT Into Threads (`ForumId`, `ThreadsTitle`, `CreatorId`,`RecentPostTimeStamp`) Values (?,?,?,?);', (int(forum_id), requestJSON.get('title'), userid, timestamp))
             thread = cur.execute('SELECT last_insert_rowid() as ThreadId;').fetchall()
             threadid = dict(thread[0]).get('ThreadId')
 
