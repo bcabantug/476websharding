@@ -337,6 +337,9 @@ def post(forum_id, thread_id):
         checkifforumexists = query_db('SELECT 1 from Forums where ForumId = ?;', [forum_id])
         if checkifforumexists == []: #sqlite3.PARSE_DECLTYPES
             return get_response(404)
+        checkifthreadexists = query_db('SELECT 1 from Threads where ThreadId = ?;', [thread_id])
+        if checkifthreadexists == []:
+                return get_response(404)
         # Get all posts from specified thread
         query = 'SELECT Username as author, Message as text, PostsTimestamp as timestamp from Posts join Users on AuthorId = UserId and ThreadBelongsTo = ?;'
 
