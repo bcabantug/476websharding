@@ -216,17 +216,19 @@ def thread(forum_id):
             requestJSON = request.get_json()
             conn = get_db()
             cur = conn.cursor()
-            cur.execute('INSERT Into Threads (`ForumId`, `ThreadsTitle`) Values (?,?);', (int(forum_id), requestJSON.get('title')))
+
+            timestamp = strftime('%Y-%m-%d %H:%M:%f', gmtime()) # + ' GMT'
+            cur.execute('INSERT Into Threads (`ForumId`, `ThreadsTitle`, `CreatorId`,`RecentPostTimeStamp`) Values (?,?,?);', (int(forum_id), requestJSON.get('title'), userid, timestamp))
             thread = cur.execute('SELECT last_insert_rowid() as ThreadId;').fetchall()
             threadid = dict(thread[0]).get('ThreadId')
-            # timestamp = strftime('%a, %d %b %Y %H:%M:%S', gmtime()) + ' GMT'
-            timestamp = int(gmtime())
+
+            #timestamp = int(gmtime())
 
             # Select query to return thread id
             conn = get_db(get_shard_key(threadid), sqlite3.PARSE_DECLTYPES)
             cur = conn.cursor()
             # Update the insert posts query
-            cur.execute('INSERT into Posts (`guid`, `AuthorId`, `ThreadBelongsTo`, `PostsTimestamp`, `Message`) values (?, ?,?,?,?);', (uuid.uuid4(), userid, threadid, timestamp, requestJSON.get('text')))
+            cur.execute('INSERT into Posts (`guid`, `AuthorName`, `ThreadBelongsTo`, `PostsTimestamp`, `Message`) values (?,?,?,?,?);', (uuid.uuid4(), user, threadid, timestamp, requestJSON.get('text')))
             conn.commit()
             conn.close()
 
@@ -250,7 +252,7 @@ def thread(forum_id):
         #   where AuthorId = Users.UserId'
         # Select the columns from the Threads table
         query = """
-            SELECT Threads.ThreadId as id, Threads.ThreadsTitle as title, Users.Username as creator, strftime('%a, %d %b %Y %H:%M:%S', Threads.RecentPostTimeStamp) as timestamp
+            SELECT Threads.ThreadId as id, Threads.ThreadsTitle as title, Users.Username as creator, strftime('%Y-%m-%d %H:%M:%f', Threads.RecentPostTimeStamp) as timestamp
             FROM Threads, Users, Forums
             WHERE Threads.CreatorId = Users.UserID
             AND Threads.ForumId = Forums.ForumId
@@ -457,11 +459,11 @@ def init_db():
                 c = conn.cursor()
                 #no foreign keys needed as posts are on separate db shards away from the main db
                 c.execute('DROP TABLE if exists Posts')
-                c.execute('CREATE TABLE Posts(guid GUID PRIMARY KEY, `ThreadBelongsTo` INTEGER NOT NULL, `AuthorId` INTEGER NOT NULL, `PostsTimestamp` TEXT NOT NULL, `Message` TEXT NOT NULL)')
+                c.execute('CREATE TABLE Posts(guid GUID PRIMARY KEY, `ThreadBelongsTo` INTEGER NOT NULL, `AuthorName` TEXT NOT NULL, `PostsTimestamp` TEXT NOT NULL, `Message` TEXT NOT NULL)')
                 #
                 # #insert test data here
                 #
-                data_insert = (uuid.uuid4(), 1, 2,  'Tue, 02 Sep 2018 15:42:28 GMT', 'Post Test - Author=1 Thread=1')
+                data_insert = (uuid.uuid4(), 1, "alice",  'Tue, 02 Sep 2018 15:42:28 GMT', 'Post Test - Author=1 Thread=1')
                 #test data check
                 print ('Input_data: ', data_insert)
                 if sys.version_info[0] < 3:
