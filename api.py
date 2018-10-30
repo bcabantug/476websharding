@@ -4,7 +4,7 @@ import sqlite3
 import uuid
 import json
 from datetime import datetime
-from time import gmtime, strftime
+from time import gmtime, strftime, time
 import click
 
 import uuid #will be used for generating GUIDs
@@ -74,7 +74,7 @@ def close_connection(exception):
 # args: query arguments, leave empty if no args; e.g. ['user', 'password']sqlite3.PARSE_DECLTYPES
 # one: Set to true if only 1 row is required for query else keep false
 # returns results of the query
-def query_db(query, args=(), one=False, db_name=DATABASE, detect_types=None):
+def query_db(query, args=(), one=False, db_name=DATABASE, detect_types=0):
     cur = get_db(db_name, detect_types).execute(query, args)
     rv = cur.fetchall()
     cur.close()
@@ -190,7 +190,7 @@ def forum():
         cur = conn.cursor()
         all_forums = cur.execute(query).fetchall()
 
-        return Response(None, 200)
+        return get_response(200, all_forums)
         #return jsonify(all_forums)
     else:
         return get_response(405)
@@ -218,12 +218,14 @@ def thread(forum_id):
             cur.execute('INSERT Into Threads (`ForumId`, `ThreadsTitle`) Values (?,?);', (int(forum_id), requestJSON.get('title')))
             thread = cur.execute('SELECT last_insert_rowid() as ThreadId;').fetchall()
             threadid = dict(thread[0]).get('ThreadId')
-            timestamp = strftime('%a, %d %b %Y %H:%M:%S', gmtime()) + ' GMT'
+            # timestamp = strftime('%a, %d %b %Y %H:%M:%S', gmtime()) + ' GMT'
+            timestamp = int(gmtime())
 
             # Select query to return thread id
-
+            conn = get_db(get_shard_key(threadid), sqlite3.PARSE_DECLTYPES)
+            cur = conn.cursor()
             # Update the insert posts query
-            cur.execute('INSERT into Posts (`AuthorId`, `ThreadBelongsTo`, `PostsTimestamp`, `Message`) values (?,?,?,?);', (userid, threadid, timestamp, requestJSON.get('text')))
+            cur.execute('INSERT into Posts (`guid`, `AuthorId`, `ThreadBelongsTo`, `PostsTimestamp`, `Message`) values (?, ?,?,?,?);', (uuid.uuid4(), userid, threadid, timestamp, requestJSON.get('text')))
             conn.commit()
             conn.close()
 
@@ -233,7 +235,28 @@ def thread(forum_id):
 
     elif request.method == 'GET':
         # Break this query up
-        query = 'SELECT id, title, Users.Username as creator, timestamp from (select id, AuthorId, timestamp, title from (select Threads.ThreadId as id, AuthorId, timestamp, Threads.ThreadsTitle as title, Threads.ForumId as Fid from (select ThreadBelongsTo, AuthorId, PostsTimestamp as timestamp, Posts.PostId from Posts) join Threads on ThreadBelongsTo = Threads.ThreadId group by Threads.ThreadId having max(PostId) order by PostId desc) join Forums on Fid = Forums.ForumId where Forums.ForumId = ?) join Users where AuthorId = Users.UserId'
+        # query = 'SELECT id, title, Users.Username as creator, timestamp
+        # from (select id, AuthorId, timestamp, title
+        # from (select Threads.ThreadId as id, AuthorId, timestamp, Threads.ThreadsTitle as title, Threads.ForumId as Fid
+        # from (select ThreadBelongsTo, AuthorId, PostsTimestamp as timestamp, Posts.PostId from Posts)
+        # join Threads on ThreadBelongsTo = Threads.ThreadId
+        # group by Threads.ThreadId having max(PostId)
+        # order by PostId desc)
+        # join Forums
+        #   on Fid = Forums.ForumId
+        #   where Forums.ForumId = ?)
+        # join Users
+        #   where AuthorId = Users.UserId'
+        # Select the columns from the Threads table
+        query = """
+            SELECT Threads.ThreadId as id, Threads.ThreadsTitle as title, Users.Username as creator, strftime('%a, %d %b %Y %H:%M:%S', Threads.RecentPostTimeStamp) as timestamp
+            FROM Threads, Users, Forums
+            WHERE Threads.CreatorId = Users.UserID
+            AND Threads.ForumId = Forums.ForumId
+            AND Forums.ForumId = ?
+            ORDER BY Threads.RecentPostTimeStamp desc;
+        """
+
         to_filter = []
         #return all the threads from the forum
         if forum_id:
