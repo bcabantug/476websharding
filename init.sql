@@ -68,10 +68,10 @@ VALUES
 INSERT INTO Threads
   (`ForumId`, `CreatorId`, `ThreadsTitle`, `RecentPostTimeStamp`)
 VALUES
-  (1, 2, 'Thread Test 1', '1996-08-25 05:23:25.023'), --id=1 'Tue, 02 Sep 2018 15:42:28 GMT' 1535927520
-  (1, 1, 'Thread Test 1.2', 'Thu, 04 Sep 2018 15:42:28 GMT'), --id=2  1536100920
-  (2, 3, 'Thread Test 2 help','Tue, 06 Sep 2018 15:42:28 GMT' ), --id=3  1536100920
-  (3, 1, 'Thread Test 3 is here', 'Wed, 07 Sep 2018 15:45:28 GMT'); --id=4  1536100920
+  (1, 2, 'Thread Test 1', '2018-08-25 05:23:25.023'), --id=1 'Tue, 02 Sep 2018 15:42:28 GMT' 1535927520
+  (1, 1, 'Thread Test 1.2', '2018-08-26 05:23:25.023'), --id=2  1536100920
+  (2, 3, 'Thread Test 2 help','2018-08-24 05:23:25.023' ), --id=3  1536100920
+  (3, 1, 'Thread Test 3 is here', '2018-08-26 06:23:25.023'); --id=4  1536100920
 
 -- INSERT INTO Posts
 --   (`AuthorId`, `ThreadBelongsTo`, `PostsTimestamp`, `Message`)
