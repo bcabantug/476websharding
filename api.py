@@ -353,13 +353,15 @@ def post(forum_id, thread_id):
 
         shard_key = get_shard_key(int(thread_id))
         query = 'Select AuthorName as author, Message as text, PostsTimestamp as timestamp from Posts where ThreadBelongsTo = ?'
-        
-
-        return get_response(200)
-        # if allPosts == []:
-        #     return get_response(404)
-        # else:
-        #     return get_response(200, body=allPosts)
+        conn = sqlite3.connect(shard_key)
+        conn.row_factory = dict_factory
+        cur = conn.cursor()
+        allPosts = cur.execute(query, [int(thread_id)]).fetchall()
+        conn.close()
+        if allPosts == []:
+            return get_response(404)
+        else:
+            return get_response(200, body=allPosts)
             
 
     else:
@@ -484,9 +486,10 @@ def init_db():
                 # #insert test data here
                 #
 
-                data_insert = (uuid.uuid4(), thread_id, "alice",  'Tue, 02 Sep 2018 15:42:28 GMT', 'Post Test - Author=1 Thread=1')
-                thread_id = thread_id + 1
+                data_insert = (uuid.uuid4(), thread_id, "alice",  'Tue, 02 Sep 2018 15:42:28 GMT', 'Post Test - Author=1 Thread=' + str(thread_id))
+                thread_id = int(thread_id) + 1
                 #test data check
+                print(data)
                 print ('Input_data: ', data_insert)
                 if sys.version_info[0] < 3:
                     conn.text_factory = lambda x: unicode(x, 'utf-8', 'ignore')
