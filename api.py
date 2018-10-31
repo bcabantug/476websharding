@@ -56,7 +56,7 @@ def get_shard_key(threadNum):
 # From http://flask.pocoo.org/docs/1.0/patterns/sqlite3/
 # Connects to and returns the db used in init_db() and query_db() #attempt to modify get_db to fit the possibility of 3 posts shards
 def get_db(db_name=DATABASE, detect_types=0):
-    db = getattr(g, '_database', None)
+    db = getattr(g, f'_database_{db_name}', None)
     if db is None:
         db = g._database = sqlite3.connect(db_name, detect_types=detect_types) #sqlite3.PARSE_DECLTYPES
         db.row_factory = dict_factory
@@ -496,6 +496,7 @@ def init_db():
                 # #insert test data here
                 #
 
+                #TODO: fix time format
                 data_insert = (uuid.uuid4(), thread_id, "alice",  'Tue, 02 Sep 2018 15:42:28 GMT', 'Post Test - Author=1 Thread=' + str(thread_id))
                 thread_id = int(thread_id) + 1
                 #test data check
