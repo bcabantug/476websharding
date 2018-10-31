@@ -228,16 +228,16 @@ def thread(forum_id):
             #timestamp = int(gmtime())
 
             # Select query to return thread id
-            with app.app_context():
-                conn = get_db(get_shard_key(threadid), sqlite3.PARSE_DECLTYPES)
-                cur = conn.cursor()
-                # Update the insert posts query
-                # print(usertext[0]['Username'])
-                cur.execute('INSERT into Posts (`guid`, `AuthorName`, `ThreadBelongsTo`, `PostsTimestamp`, `Message`) values (?,?,?,?,?);', (uuid.uuid4(), usertext[0]['Username'], threadid, timestamp, requestJSON.get('text')))
-                conn.commit()
-                conn.close()
 
-                return get_response(201, body={}, location=('/forums/'+forum_id+'/'+str(threadid)))
+            conn = get_db(get_shard_key(threadid), sqlite3.PARSE_DECLTYPES)
+            cur = conn.cursor()
+            # Update the insert posts query
+            # print(usertext[0]['Username'])
+            cur.execute('INSERT into Posts (`guid`, `AuthorName`, `ThreadBelongsTo`, `PostsTimestamp`, `Message`) values (?,?,?,?,?);', (uuid.uuid4(), usertext[0]['Username'], threadid, timestamp, requestJSON.get('text')))
+            conn.commit()
+            conn.close()
+
+            return get_response(201, body={}, location=('/forums/'+forum_id+'/'+str(threadid)))
         else:
             return get_response(404)
 
@@ -322,14 +322,14 @@ def post(forum_id, thread_id):
 
             # Replace 1 with current thread id
             # Use mod function to return shard and pass to get_db along with detect_types
-            with app.app_context():
-                conn = get_db(get_shard_key(int(thread_id)), sqlite3.PARSE_DECLTYPES)
-                cur = conn.cursor()
-                print(get_shard_key(int(thread_id)))
-                #cur.execute('INSERT into Posts (`AuthorId`, `ThreadBelongsTo`, `PostsTimestamp`, `Message`) values (?,?,?,?);', (userid, thread_id, timestamp, requestJSON.get('text')))
-                cur.execute('INSERT into Posts (`guid`, `ThreadBelongsTo`, `AuthorName`, `PostsTimestamp`, `Message`) values (?,?,?,?,?);', (uuid.uuid4(), thread_id, usertext[0]['Username'], timestamp, requestJSON.get('text')))
-                conn.commit()
-                conn.close()
+
+            conn = get_db(get_shard_key(int(thread_id)), sqlite3.PARSE_DECLTYPES)
+            cur = conn.cursor()
+            print(get_shard_key(int(thread_id)))
+            #cur.execute('INSERT into Posts (`AuthorId`, `ThreadBelongsTo`, `PostsTimestamp`, `Message`) values (?,?,?,?);', (userid, thread_id, timestamp, requestJSON.get('text')))
+            cur.execute('INSERT into Posts (`guid`, `ThreadBelongsTo`, `AuthorName`, `PostsTimestamp`, `Message`) values (?,?,?,?,?);', (uuid.uuid4(), thread_id, usertext[0]['Username'], timestamp, requestJSON.get('text')))
+            conn.commit()
+            conn.close()
 
             query = ('UPDATE Threads SET RecentPostTimeStamp = ? WHERE ThreadId = ?;')
             conn = get_db()
@@ -373,7 +373,7 @@ def post(forum_id, thread_id):
             return get_response(404)
         else:
             return get_response(200, body=allPosts)
-            
+
 
     else:
         return get_response(405)
