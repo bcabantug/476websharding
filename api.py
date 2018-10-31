@@ -352,8 +352,8 @@ def post(forum_id, thread_id):
         # conn.close()
 
         shard_key = get_shard_key(int(thread_id))
-        print(shard_key)
-        #query = 'Select '
+        query = 'Select AuthorName as author, Message as text, PostsTimestamp as timestamp from Posts where ThreadBelongsTo = ?'
+        
 
         return get_response(200)
         # if allPosts == []:
