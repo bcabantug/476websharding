@@ -315,16 +315,28 @@ def post(forum_id, thread_id):
             if (checkifforumexists == []) or (checkifthreadexists == []):
                 return get_response(404)
 
-            user = query_db('SELECT UserId from Users where Username = ?;', [auth.username])
-            userid = dict(user[0]).get('UserId')
+            usertext = query_db('SELECT Username from Users where Username = ?;', [auth.username])
             requestJSON = request.get_json()
-            timestamp = strftime('%a, %d %b %Y %H:%M:%S', gmtime()) + ' GMT'
+            timestamp = strftime('%Y-%m-%d %H:%M:%S', gmtime())
+            # conn = get_db()
+            # cur = conn.cursor()
 
             # Replace 1 with current thread id
             # Use mod function to return shard and pass to get_db along with detect_types
-            conn = get_db(get_shard_key(thread_id), sqlite3.PARSE_DECLTYPES)
+            with app.app_context():
+                conn = get_db(get_shard_key(int(thread_id)), sqlite3.PARSE_DECLTYPES)
+                cur = conn.cursor()
+                print(get_shard_key(int(thread_id)))
+                #cur.execute('INSERT into Posts (`AuthorId`, `ThreadBelongsTo`, `PostsTimestamp`, `Message`) values (?,?,?,?);', (userid, thread_id, timestamp, requestJSON.get('text')))
+                cur.execute('INSERT into Posts (`guid`, `ThreadBelongsTo`, `AuthorName`, `PostsTimestamp`, `Message`) values (?,?,?,?,?);', (uuid.uuid4(), thread_id, usertext[0]['Username'], timestamp, requestJSON.get('text')))
+                conn.commit()
+                conn.close()
+
+            query = ('UPDATE Threads SET RecentPostTimeStamp = ? WHERE ThreadId = ?;')
+            conn = get_db()
             cur = conn.cursor()
-            cur.execute('INSERT into Posts (`AuthorId`, `ThreadBelongsTo`, `PostsTimestamp`, `Message`) values (?,?,?,?);', (userid, thread_id, timestamp, requestJSON.get('text')))
+
+            cur.execute(query, (timestamp, thread_id))
             conn.commit()
             conn.close()
 
