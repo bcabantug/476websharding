@@ -265,7 +265,6 @@ def thread(forum_id):
             ORDER BY Threads.RecentPostTimeStamp desc;
         """
 
-        to_filter = []
         #return all the threads from the forum
         if forum_id:
             conn = sqlite3.connect(DATABASE)
@@ -385,7 +384,6 @@ def user():
         # curl -X POST -H "Content-Type: application/json" -d '{"username": "tuvwxyz", "password": "123" }' http://localhost:5000/users
         data = request.get_json()
         username = data['username']
-        password = data['password']
         query = 'SELECT Username FROM Users WHERE Username=?'
         conn = sqlite3.connect(DATABASE)
         cur = conn.cursor()
