@@ -273,7 +273,7 @@ def thread(forum_id):
             all_threads = cur.execute(query, [str(forum_id)]).fetchall()
 
             for thread in all_threads:
-                formatted_time = datetime.strptime(thread['timestamp'], '%Y-%m-%d %H:%M:%S')
+                formatted_time = datetime.strptime(thread['timestamp'], '%Y-%m-%d %H:%M:%S') + " GMT"
                 thread['timestamp'] = formatted_time
             # If the the quey returns an empty result
             # e.g. http://127.0.0.1:5000/forums/100
@@ -329,7 +329,7 @@ def post(forum_id, thread_id):
             #cur.execute('INSERT into Posts (`AuthorId`, `ThreadBelongsTo`, `PostsTimestamp`, `Message`) values (?,?,?,?);', (userid, thread_id, timestamp, requestJSON.get('text')))
             cur.execute('INSERT into Posts (`guid`, `ThreadBelongsTo`, `AuthorName`, `PostsTimestamp`, `Message`) values (?,?,?,?,?);', (uuid.uuid4(), thread_id, usertext[0]['Username'], timestamp, requestJSON.get('text')))
             conn.commit()
-            conn.close()
+            conn.close()#Thread Test 1',
 
             query = ('UPDATE Threads SET RecentPostTimeStamp = ? WHERE ThreadId = ?;')
             conn = get_db()
@@ -368,6 +368,9 @@ def post(forum_id, thread_id):
         conn.row_factory = dict_factory
         cur = conn.cursor()
         allPosts = cur.execute(query, [int(thread_id)]).fetchall()
+        for posted in allPosts: #added for when returning posts timestamp for right format
+            formatted_time = datetime.strptime(posted['timestamp'], '%Y-%m-%d %H:%M:%S') + " GMT"
+            posted['timestamp'] = formatted_time
         conn.close()
         if allPosts == []:
             return get_response(404)
@@ -497,7 +500,14 @@ def init_db():
                 #
 
                 #TODO: fix time format
-                data_insert = (uuid.uuid4(), thread_id, "alice",  'Tue, 02 Sep 2018 15:42:28 GMT', 'Post Test - Author=1 Thread=' + str(thread_id))
+                if data == SHARDONE:
+                    data_insert = (uuid.uuid4(), 3, "elmer", 'Fri, 24 Aug 2018 05:23:25', "Post Test - Author=3 Thread=2")
+                elif data == SHARDTWO:
+                    data_insert = (uuid.uuid4(), 1, "brian", 'Sat, 25 Aug 2018 05:23:25', "Post Test - Author=2 Thread=1")
+                elif data == SHARDTHREE:
+                    data_insert = (uuid.uuid4(), 2, "cameron", 'Sun, 26 Aug 2018 05:23:25', "Post Test - Author=1 Thread=1")
+
+                # data_insert = (uuid.uuid4(), thread_id, "alice",  'Tue, 02 Sep 2018 15:42:28 GMT', 'Post Test - Author=1 Thread=' + str(thread_id))
                 thread_id = int(thread_id) + 1
                 #test data check
                 print(data)
@@ -506,8 +516,17 @@ def init_db():
                     conn.text_factory = lambda x: unicode(x, 'utf-8', 'ignore')
                 c.execute('INSERT INTO Posts VALUES(?, ?, ?, ?, ?)', data_insert)
                 conn.commit()
+
+                if data == SHARDTWO:
+                    data_insert = (uuid.uuid4(), 4, "cameron", 'Sun, 26 Aug 2018 06:23:25', "Post Test - Author=1 Thread=3")
+                    c.execute('INSERT INTO Posts VALUES(?, ?, ?, ?, ?)', data_insert)
+                    conn.commit()
+
                 c.execute('SELECT * from Posts;')
                 print ("Result Data: ", c.fetchone())
+
+
+
 
                 c.execute('DROP table if exists test')
                 # c.execute('CREATE TABLE test (guid GUID PRIMARY KEY, name TEXT)')
