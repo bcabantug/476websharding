@@ -25,23 +25,6 @@ SHARDTHREE = 'shardthree.db'
 sqlite3.register_converter('GUID', lambda b: uuid.UUID(bytes_le=b))
 sqlite3.register_adapter(uuid.UUID, lambda u: u.bytes_le)
 
-# #example of storing GUID in sqlite3 WILL MODIFY/use as based (uuid.UUID as primary keys)
-# sqlite3.register_converter('GUID', lambda b: uuid.UUID(bytes_le=b)) #convert SQLite types to Python types
-# sqlite3.register_adapter(uuid.UUID, lambda u: buffer(u.bytes_le)) #convert Python types to SQLite types
-#
-# conn = sqlite3.connect('test.db', detect_types=sqlite3.PARSE_DECLTYPES) #pass detect types paramter of detect
-#
-# c = conn.cursor()
-# c.execute('CREATE TABLE test (guid GUID PRIMARY KEY, name TEXT)')
-#
-# data = (uuid.uuid4(), 'foo')
-# print 'Input Data:', data
-# c.execute('INSERT INTO test VALUES (?,?)', data)
-#
-# c.execute('SELECT * FROM test')
-# print 'Result Data:', c.fetchone()
-
-#for example purposes
 
 #function for returning shard key based on thread id
 def get_shard_key(threadNum):
@@ -242,20 +225,7 @@ def thread(forum_id):
             return get_response(404)
 
     elif request.method == 'GET':
-        # Break this query up
-        # query = 'SELECT id, title, Users.Username as creator, timestamp
-        # from (select id, AuthorId, timestamp, title
-        # from (select Threads.ThreadId as id, AuthorId, timestamp, Threads.ThreadsTitle as title, Threads.ForumId as Fid
-        # from (select ThreadBelongsTo, AuthorId, PostsTimestamp as timestamp, Posts.PostId from Posts)
-        # join Threads on ThreadBelongsTo = Threads.ThreadId
-        # group by Threads.ThreadId having max(PostId)
-        # order by PostId desc)
-        # join Forums
-        #   on Fid = Forums.ForumId
-        #   where Forums.ForumId = ?)
-        # join Users
-        #   where AuthorId = Users.UserId'
-        # Select the columns from the Threads table
+
         query = """
             SELECT Threads.ThreadId as id, Threads.ThreadsTitle as title, Users.Username as creator, strftime('%Y-%m-%d %H:%M:%S', Threads.RecentPostTimeStamp) as timestamp
             FROM Threads, Users, Forums
@@ -273,7 +243,8 @@ def thread(forum_id):
             all_threads = cur.execute(query, [str(forum_id)]).fetchall()
 
             for thread in all_threads:
-                formatted_time = datetime.strptime(thread['timestamp'], '%Y-%m-%d %H:%M:%S') + " GMT"
+                thread['timestamp'] = thread['timestamp'] + ' GMT'
+                formatted_time = datetime.strptime(thread['timestamp'], '%Y-%m-%d %H:%M:%S %Z') #+ " GMT"
                 thread['timestamp'] = formatted_time
             # If the the quey returns an empty result
             # e.g. http://127.0.0.1:5000/forums/100
@@ -287,18 +258,6 @@ def thread(forum_id):
     else:
         return get_response(405)
 
-
-# @app.route('/')
-# def index():
-#     return render_template('index.html')
-#
-# @app.route('/login')
-# def login():
-#     return render_template('login.html')
-#
-# @app.route('/dashboard')
-# def dashboard():
-#     return render_template('dashboard.html')
 
 #list posts to the specified thread GET
 @app.route('/forums/<forum_id>/<thread_id>', methods=['GET', 'POST'])
@@ -317,11 +276,6 @@ def post(forum_id, thread_id):
             usertext = query_db('SELECT Username from Users where Username = ?;', [auth.username])
             requestJSON = request.get_json()
             timestamp = strftime('%Y-%m-%d %H:%M:%S', gmtime())
-            # conn = get_db()
-            # cur = conn.cursor()
-
-            # Replace 1 with current thread id
-            # Use mod function to return shard and pass to get_db along with detect_types
 
             conn = get_db(get_shard_key(int(thread_id)), sqlite3.PARSE_DECLTYPES)
             cur = conn.cursor()
@@ -351,16 +305,6 @@ def post(forum_id, thread_id):
         checkifthreadexists = query_db('SELECT 1 from Threads where ThreadId = ?;', [thread_id])
         if checkifthreadexists == []:
                 return get_response(404)
-        # # Get all posts from specified thread
-        # query = 'SELECT Username as author, Message as text, PostsTimestamp as timestamp from Posts join Users on AuthorId = UserId and ThreadBelongsTo = ?;'
-
-        # #get the posts based on thread id/ have to check for uuid (not setup yet)
-        # conn = sqlite3.connect(DATABASE)
-        # conn.row_factory = dict_factory
-        # cur = conn.cursor()
-        # # all_threads = cur.execute(query).fetchall()
-        # allPosts = cur.execute(query, [thread_id]).fetchall()
-        # conn.close()
 
         shard_key = get_shard_key(int(thread_id))
         query = 'Select AuthorName as author, Message as text, PostsTimestamp as timestamp from Posts where ThreadBelongsTo = ?'
@@ -369,7 +313,8 @@ def post(forum_id, thread_id):
         cur = conn.cursor()
         allPosts = cur.execute(query, [int(thread_id)]).fetchall()
         for posted in allPosts: #added for when returning posts timestamp for right format
-            formatted_time = datetime.strptime(posted['timestamp'], '%Y-%m-%d %H:%M:%S') + " GMT"
+            posted['timestamp'] = posted['timestamp'] + ' GMT'
+            formatted_time = datetime.strptime(posted['timestamp'], '%Y-%m-%d %H:%M:%S %Z')# + " GMT"
             posted['timestamp'] = formatted_time
         conn.close()
         if allPosts == []:
@@ -443,9 +388,7 @@ def change_pass(username):
         if user == None:
             #print ("hah not found")
             return get_response(404)
-        # elif auth is False or auth_check(auth) is False:
-        #     #print ("wrong password dummy")
-        #     return get_response(401)
+
         elif auth.username != username or auth.username != data.get('username'):
             #print ("hey you, stop it")
             return get_response(409)
@@ -468,13 +411,6 @@ def init_db():
     databases = [DATABASE, SHARDTWO, SHARDTHREE, SHARDONE]
     thread_id = 1
     with app.app_context():
-        # if data == DATABASE:
-        #     db = get_db()
-        #     with app.open_resource('init.sql', mode='r') as f:
-        #         db.cursor().executescript(f.read())
-        #     db.commit()
-        #     print ('Database Initilaized')
-        # else:
         for data in databases:
             #create/init the shards
             if data == DATABASE:
@@ -501,11 +437,11 @@ def init_db():
 
                 #TODO: fix time format
                 if data == SHARDONE:
-                    data_insert = (uuid.uuid4(), 3, "elmer", 'Fri, 24 Aug 2018 05:23:25', "Post Test - Author=3 Thread=2")
+                    data_insert = (uuid.uuid4(), 3, "elmer", '2018-08-24 05:23:25', "Post Test - Author=3 Thread=2")
                 elif data == SHARDTWO:
-                    data_insert = (uuid.uuid4(), 1, "brian", 'Sat, 25 Aug 2018 05:23:25', "Post Test - Author=2 Thread=1")
+                    data_insert = (uuid.uuid4(), 1, "brian", '2018-08-25 05:23:25', "Post Test - Author=2 Thread=1")
                 elif data == SHARDTHREE:
-                    data_insert = (uuid.uuid4(), 2, "cameron", 'Sun, 26 Aug 2018 05:23:25', "Post Test - Author=1 Thread=1")
+                    data_insert = (uuid.uuid4(), 2, "cameron", '2018-08-26 2018 05:23:25', "Post Test - Author=1 Thread=1")
 
                 # data_insert = (uuid.uuid4(), thread_id, "alice",  'Tue, 02 Sep 2018 15:42:28 GMT', 'Post Test - Author=1 Thread=' + str(thread_id))
                 thread_id = int(thread_id) + 1
@@ -525,19 +461,7 @@ def init_db():
                 c.execute('SELECT * from Posts;')
                 print ("Result Data: ", c.fetchone())
 
-
-
-
                 c.execute('DROP table if exists test')
-                # c.execute('CREATE TABLE test (guid GUID PRIMARY KEY, name TEXT)')
-                #
-                # data = (uuid.uuid4(), 'foo')
-                # print ('Input Data:', data)
-                # c.execute('INSERT INTO test VALUES (?,?)', data)
-                #
-                # c.execute('SELECT * FROM test')
-                # print ('Result Data:', c.fetchone())
-
 
 if __name__ == "__main__":
     app.run()

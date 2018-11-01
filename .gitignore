@@ -4,3 +4,4 @@ shardone.db
 shardthree.db
 shardtwo.db
 general.db-journal
+__pycache__/api.cpython-36.pyc

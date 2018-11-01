@@ -28,23 +28,6 @@ CREATE TABLE Threads
   FOREIGN KEY(`ForumId`) REFERENCES `Forums`(`ForumId`) ON DELETE CASCADE
 );
 
--- CREATE TABLE Posts
--- (
---   `PostId` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT UNIQUE,
---   `ThreadBelongsTo` INTEGER NOT NULL,
---   `AuthorId` INTEGER NOT NULL,
---   `PostsTimestamp` TEXT NOT NULL,
---   `Message` TEXT NOT NULL,
---   FOREIGN KEY(`ThreadBelongsTo`) REFERENCES `Thread`(`ThreadId`) ON DELETE CASCADE,
---   FOREIGN KEY(`AuthorId`) REFERENCES `Users`(`UserId`) ON DELETE CASCADE
--- );
-
--- CREATE INDEX `PostsChronological`
--- ON `Posts`
--- (
---   `PostsTimestamp` ASC
--- );
-
 CREATE INDEX `UserId`
 ON `Users`
 (
@@ -68,18 +51,7 @@ VALUES
 INSERT INTO Threads
   (`ForumId`, `CreatorId`, `ThreadsTitle`, `RecentPostTimeStamp`)
 VALUES
-  (1, 2, 'Thread Test 1', '2018-08-25 05:23:25'), --id=1 'Tue, 02 Sep 2018 15:42:28 GMT' 1535927520
-  (1, 1, 'Thread Test 1.2', '2018-08-26 05:23:25'), --id=2  1536100920
-  (2, 3, 'Thread Test 2 help','2018-08-24 05:23:25' ), --id=3  1536100920
-  (3, 1, 'Thread Test 3 is here', '2018-08-26 06:23:25'); --id=4  1536100920
-
--- INSERT INTO Posts
---   (`AuthorId`, `ThreadBelongsTo`, `PostsTimestamp`, `Message`)
--- VALUES
---   (1, 1, 'Tue, 02 Sep 2018 15:42:28 GMT', 'Post Test - Author=1 Thread=1'), --id=1
---   (2, 1, 'Wed, 03 Sep 2018 15:43:28 GMT', 'Post Test - Author=2 Thread=1 Most Recent'), --id=2
---   (3, 2, 'Thu, 04 Sep 2018 15:42:28 GMT', 'Post Test - Author=3 Thread=1'), --id=3
---   (1, 2, 'Fri, 05 Sep 2018 15:43:28 GMT', 'Post Test - Author=1 Thread=1 Most Recent'), --id=4
---   (3, 3, 'Tue, 06 Sep 2018 15:42:28 GMT', 'Post Test - Author=3 Thread=2'), --id=5
---   (2, 3, 'Wed, 07 Sep 2018 15:43:28 GMT', 'Post Test - Author=2 Thread=2 Most Recent'), --id=6
---   (2, 4, 'Wed, 07 Sep 2018 15:45:28 GMT', 'Post TEST 4 EXISTS'); --id=7
+  (1, 2, 'Post Test - Author=2 Thread=1', '2018-08-25 05:23:25'), --id=1 'Tue, 02 Sep 2018 15:42:28 GMT' 1535927520
+  (1, 1, 'Post Test - Author=1 Thread=1', '2018-08-26 05:23:25'), --id=2  1536100920
+  (2, 3, 'Post Test - Author=3 Thread=2','2018-08-24 05:23:25' ), --id=3  1536100920
+  (3, 1, 'Post Test - Author=1 Thread=3', '2018-08-26 06:23:25'); --id=4  1536100920
